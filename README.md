@@ -1,1 +1,6 @@
-This project implements a negamax chess agent for my CSCI-5511 course project.
+### Motivation
+This repo contains my chess agent developed as part of my CSCI-5511 course project.
+
+### Features
+
+### References

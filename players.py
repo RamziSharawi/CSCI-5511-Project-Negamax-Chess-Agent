@@ -302,10 +302,10 @@ class AdvancedPlayer():
                 
                 # Print info (optional)
                 elapsed = time.time() - start_time
-                print(f"Depth {current_depth} | Score: {score} | Time: {elapsed:.2f}s")
+                #print(f"Depth {current_depth} | Score: {score} | Time: {elapsed:.2f}s")
 
                 if score > 90000000:
-                    print("Checkmate found! Stopping search early.")
+                    #print("Checkmate found! Stopping search early.")
                     break
 
             except Exception as e:

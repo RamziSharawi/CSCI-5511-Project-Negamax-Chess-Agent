@@ -21,7 +21,7 @@ All aspects of this codebase are implemented in **Python 3.10.10**, chosen for i
 To clone this repository:
 
 ```bash
-git clone https://github.com/PKUDigitalHealth/ECGFounder.git
+git clone https://github.com/RamziSharawi/CSCI-5511-Project-Negamax-Chess-Agent.git
 ```
 
 ## Environment Set Up

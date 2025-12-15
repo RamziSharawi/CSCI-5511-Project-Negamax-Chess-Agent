@@ -56,5 +56,24 @@ pip install -r requirements.txt
 ```
 
 # 🖥️ Usage Instructions
-This repository contains three 
+This repository contains three main files:
+1. **players.py:** Contains all agents used in the codebase. This includes a RandomPlayer agent (plays random moves), a RAMZPlayer agent (the RAM-Z chess agent), and a StockfishPlayer agent (standard Stockfish).
+2. **chess_gui.py:** Contains code to play against any of the included agents using a chessboard GUI. 
+3. **win_ratio.py** Plays specified agents against each other to analyze their performances against each other.
+
+The only files that need to be run are **chess_gui.py** and **win_ratio.py**. Instructions on how to run them through the terminal are below.
+
+### Playing against agents
+To launch the GUI and play a game against a certain agent, run the **chess_gui.py** script from your terminal.
+**Example Command:**
+```bash
+python chess_gui.py --color black --agent advanced --depth 10 --time 1.0 --elo 1500
+```
+ * Command-line arguments:
+    * **--color**: Sets your starting color (`white` or `black`). Default is `white`.
+    * **--agent**: Sets the opponent type (`random`, `advanced`, etc.). Default is `advanced`.
+    * **--depth**: Sets the maximum search depth for the agent (in plies). Default is `4`.
+    * **--time**: Sets the time limit per move for the agent (in seconds). Default is `5.0`.
+    * **--elo**: Sets the approximate ELO rating for the engine (if supported). Default is `1500`.
+
 

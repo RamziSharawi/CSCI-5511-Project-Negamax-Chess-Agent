@@ -22,11 +22,14 @@ To clone this repository:
 
 '''bash
 git clone https://github.com/PKUDigitalHealth/ECGFounder.git
+'''
 
 ## Environment Set Up
 Install required packages:
+
 '''bash
 conda create -n ECGFounder python=3.10
 conda activate ECGFounder
 pip install -r requirements.txt
+'''
 

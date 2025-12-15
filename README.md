@@ -67,7 +67,7 @@ The only files that need to be run are **chess_gui.py** and **win_ratio.py**. In
 To launch the GUI and play a game against a certain agent, run the **chess_gui.py** script from your terminal.
 **Example Command:**
 ```bash
-python chess_gui.py --color black --agent advanced --depth 10 --time 1.0 --elo 1500
+python chess_gui.py --color black --agent ramz --depth 10 --time 1.0 --elo 1500
 ```
 Command-line arguments:
  * **--color**: Sets your opponent's starting color (`white` or `black`). Default is `black`.
@@ -75,5 +75,20 @@ Command-line arguments:
  * **--depth**: Sets the maximum search depth for the agent (in plies). Default is `4`.
  * **--time**: Sets the time limit per move for the agent (in seconds). Default is `5.0`.
  * **--elo**: Sets the approximate ELO rating for the agent (only supported by Stockfish). Default is `1500`.
+
+### Evaluating agent performances
+To play agents against each other and obtain their win-ratios and plots on performance by starting color and game phase, run the **win_ratio.py** script from your terminal.
+**Example Command:**
+```bash
+python win_ratio.py --agent1 ramz --agent2 stockfish --games 100 --depth 4 --time 5.0 --elo 1500
+```
+Command-line arguments:
+ * **--agent1**: Sets the first agent (`random`, `ramz`, 'stockfish'). Default is `ramz`.
+ * **--agent2**: Sets the second agent (`random`, `ramz`, 'stockfish'). Default is `stockfish`.
+ * **--games**: Number of games to play. Default is `100`.
+ * **--depth**: Sets the maximum search depth for the agent (in plies). Default is `4`.
+ * **--time**: Sets the time limit per move for the agent (in seconds). Default is `5.0`.
+ * **--elo**: Sets the approximate ELO rating for the agent (only supported by Stockfish). Default is `1500`.
+
 
 

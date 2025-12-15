@@ -69,13 +69,13 @@ def create_player(agent_type, color, args):
             mycolor=color,
             depth_limit=args.depth,
             time_limit=args.time,
-            opening_book_path=args.book,
+            opening_book_path=DEFAULT_BOOK,
             syzygy_path=None
         )
     elif agent_type == 'stockfish':
         return StockfishPlayer(
             color=color,
-            path=args.stockfish_path,
+            path=DEFAULT_STOCKFISH,
             depth_limit=args.depth,
             time_limit=args.time,
             elo=args.elo
@@ -195,10 +195,6 @@ def main():
     parser.add_argument('--time', type=float, default=DEFAULT_TIME_LIMIT, help="Time limit (seconds) per move")
     parser.add_argument('--elo', type=int, default=DEFAULT_STOCKFISH_ELO, help="Elo for Stockfish (if used)")
     
-    # Paths
-    parser.add_argument('--stockfish_path', type=str, default=DEFAULT_STOCKFISH, help="Path to Stockfish exe")
-    parser.add_argument('--book', type=str, default=DEFAULT_BOOK, help="Path to opening book")
-
     args = parser.parse_args()
 
     print(f"--- STARTING MATCH: {args.agent1.title()} vs {args.agent2.title()} ---")

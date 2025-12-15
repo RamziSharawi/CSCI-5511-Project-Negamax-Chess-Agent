@@ -35,9 +35,23 @@ pip install -r requirements.txt
 ```
 
 ### Option 2: Using venv
+
+**1. Create the virtual environment:**
 ```bash
 python -m venv RAMZAgent
-.\RAMZAgent\Scripts\activate
+```
+
+**2. Activate the virtual environment:**
+  * Windows:
+  ```bash
+  .\RAMZAgent\Scripts\activate
+  ```
+  * Mac/Linux:
+  ```bash
+  source RAMZAgent/bin/activate
+  ```
+**3. Install the dependencies:**
+```bash
 pip install -r requirements.txt
 ```
 

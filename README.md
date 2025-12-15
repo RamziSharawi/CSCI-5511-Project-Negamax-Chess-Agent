@@ -69,11 +69,11 @@ To launch the GUI and play a game against a certain agent, run the **chess_gui.p
 ```bash
 python chess_gui.py --color black --agent advanced --depth 10 --time 1.0 --elo 1500
 ```
- * Command-line arguments:
-    * **--color**: Sets your starting color (`white` or `black`). Default is `white`.
-    * **--agent**: Sets the opponent type (`random`, `advanced`, etc.). Default is `advanced`.
-    * **--depth**: Sets the maximum search depth for the agent (in plies). Default is `4`.
-    * **--time**: Sets the time limit per move for the agent (in seconds). Default is `5.0`.
-    * **--elo**: Sets the approximate ELO rating for the engine (if supported). Default is `1500`.
+Command-line arguments:
+ * **--color**: Sets your opponent's starting color (`white` or `black`). Default is `black`.
+ * **--agent**: Sets the agent to play as your opponent (`random`, `ramz`, 'stockfish'). Default is `ramz`.
+ * **--depth**: Sets the maximum search depth for the agent (in plies). Default is `4`.
+ * **--time**: Sets the time limit per move for the agent (in seconds). Default is `5.0`.
+ * **--elo**: Sets the approximate ELO rating for the agent (only supported by Stockfish). Default is `1500`.
 
 

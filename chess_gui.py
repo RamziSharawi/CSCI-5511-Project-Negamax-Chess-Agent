@@ -1,6 +1,8 @@
 import chess
 import pygame
-from players import RandomPlayer, AdvancedPlayer
+from players import RandomPlayer, RAMZPlayer
+import sys
+import argparse
 ### FUNCTION DEFINITIONS
 # --- Draws the chess board ---
 def draw_board():
@@ -53,11 +55,82 @@ def draw_game_over(winner):
     screen.blit(text, text_rect)
 
 ### MAIN SCRIPT
+# --- 1. SETUP ARGUMENT PARSER ---
+parser = argparse.ArgumentParser(description="CSCI-5511 Chess Engine Interface")
 
-# Player definition
-AIColor = chess.WHITE
-HumanColor = chess.BLACK
-Player = AdvancedPlayer(AIColor, depth_limit = 4, time_limit = 5.0, opening_book_path="opening_books/gm2600.bin", syzygy_path=None)
+# Argument for Agent Type
+parser.add_argument(
+    '--agent', 
+    type=str, 
+    default='ramz', 
+    choices=['random', 'ramz', 'stockfish'], 
+    help="Choose the AI agent: 'random', 'ramz', or 'stockfish'"
+)
+
+# Argument for AI Color
+parser.add_argument(
+    '--color', 
+    type=str, 
+    default='black', 
+    choices=['white', 'black'], 
+    help="Choose the AI's color: 'white' or 'black'"
+)
+
+parser.add_argument('--depth', type=int, default=4, help="Depth limit for RAMZPlayer (default: 4)")
+parser.add_argument('--time', type=float, default=5.0, help="Time limit in seconds per move (default: 5.0)")
+parser.add_argument('--elo', type=int, default=1600, help="Elo rating for Stockfish (default: 1500)")
+
+args = parser.parse_args()
+
+# --- 2. CONFIGURE COLORS ---
+if args.color.lower() == 'white':
+    AIColor = chess.WHITE
+    HumanColor = chess.BLACK
+else:
+    AIColor = chess.BLACK
+    HumanColor = chess.WHITE
+
+print(f"Game Mode: Human ({'White' if HumanColor else 'Black'}) vs {args.agent.title()} ({'White' if AIColor else 'Black'})")
+
+# --- 3. INITIALIZE PLAYER ---
+if args.agent == 'random':
+    # Assuming RandomPlayer takes color as an argument
+    Player = RandomPlayer(AIColor) 
+    
+elif args.agent == 'ramz':
+    Player = RAMZPlayer(
+        AIColor, 
+        depth_limit=args.depth, 
+        time_limit=args.time, 
+        opening_book_path="opening_books/gm2600.bin", 
+        syzygy_path=None
+    )
+
+elif args.agent == 'stockfish':
+    try:
+        from players import StockfishPlayer
+        STOCKFISH_PATH = r"stockfish\stockfish-windows-x86-64-avx2.exe"
+        
+        Player = StockfishPlayer(
+            AIColor, 
+            path=STOCKFISH_PATH, 
+            depth_limit=args.depth,
+            time_limit=args.time, 
+            elo=args.elo
+        )
+    except Exception as e:
+        print(f"Error loading Stockfish: {e}")
+        print("Falling back to RAMZPlayer...")
+        
+        # Fallback to RAMZPlayer if Stockfish fails
+        Player = RAMZPlayer(
+            AIColor, 
+            depth_limit=args.depth, 
+            time_limit=args.time, 
+            opening_book_path="opening_books/gm2600.bin", 
+            syzygy_path=None
+        )
+
 # Setting parameter values
 WIDTH, HEIGHT = 640, 640
 SQ_SIZE = WIDTH//8
@@ -142,5 +215,8 @@ while running:
     if game_over:
         draw_game_over(winner)
     pygame.display.flip()
+
+if hasattr(Player, 'close'):
+    Player.close()
 
 pygame.quit()

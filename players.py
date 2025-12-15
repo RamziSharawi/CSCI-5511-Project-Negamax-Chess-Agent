@@ -4,6 +4,7 @@ import random
 from game_functions import actions
 import chess.syzygy
 import time
+import chess.engine
 
 # Based on PeSTO evaluation function. First element of tuple is midgame value, second is endgame value.
 MATERIAL_PESTO = {
@@ -156,15 +157,6 @@ PST_DICT_EG = {
     chess.PAWN: PAWN_EG, chess.KNIGHT: KNIGHT_EG, chess.BISHOP: BISHOP_EG,
     chess.ROOK: ROOK_EG, chess.QUEEN: QUEEN_EG,   chess.KING: KING_EG
 }
-# # Standard Material Values (centipawns)
-# PIECE_VALUES = {
-#     chess.PAWN: 100,
-#     chess.KNIGHT: 320,
-#     chess.BISHOP: 330,
-#     chess.ROOK: 500,
-#     chess.QUEEN: 900,
-#     chess.KING: 20000 # Arbitrary high value
-# }
 
 class RandomPlayer():
     def __init__(self, mycolor):
@@ -178,7 +170,7 @@ class RandomPlayer():
         curr_move = random.choice(legals)
         return curr_move
 
-class AdvancedPlayer():
+class RAMZPlayer():
 
     def __init__(self, mycolor, depth_limit, time_limit, opening_book_path, syzygy_path):
         self.mycolor = mycolor
@@ -599,4 +591,25 @@ class AdvancedPlayer():
         else:
             return -final_score
     
+class StockfishPlayer:
+    def __init__(self, color, path, depth_limit=4, time_limit=5.0, elo=1500):
+        self.color = color
+        self.time_limit = time_limit
+        self.depth_limit = depth_limit # Store the depth limit
+        try:
+            self.engine = chess.engine.SimpleEngine.popen_uci(path)
+            self.engine.configure({"UCI_LimitStrength": True, "UCI_Elo": elo})
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Could not find Stockfish at: {path}")
+
+    def get_color(self):
+        return self.color
+
+    def make_move(self, board):
+        limit = chess.engine.Limit(time=self.time_limit, depth=self.depth_limit)
+        result = self.engine.play(board, limit)
+        return result.move
+
+    def close(self):
+        self.engine.quit()
     

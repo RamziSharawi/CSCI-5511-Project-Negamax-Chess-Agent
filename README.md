@@ -25,11 +25,19 @@ git clone https://github.com/RamziSharawi/CSCI-5511-Project-Negamax-Chess-Agent.
 ```
 
 ## Environment Set Up
-Install required packages:
+You can set up the environment using either Conda or Python's built-in `venv` module. Choose the option that works best for you.
 
+### Option 1: Using Conda
 ```bash
 conda create -n RAMZAgent python=3.10
 conda activate RAMZAgent
+pip install -r requirements.txt
+```
+
+### Option 2: Using venv
+```bash
+python -m venv RAMZAgent
+.\RAMZAgent\Scripts\activate
 pip install -r requirements.txt
 ```
 

@@ -1,7 +1,6 @@
 import chess
 import chess.polyglot
 import random
-from game_functions import actions
 import chess.syzygy
 import time
 import chess.engine
@@ -166,8 +165,10 @@ class RandomPlayer():
         return self.color
     
     def make_move(self, board):
-        legals = actions(board)
-        curr_move = random.choice(legals)
+        legal_actions = []
+        for m in board.legal_moves:
+            legal_actions.append(m)
+        curr_move = random.choice(legal_actions)
         return curr_move
 
 class RAMZPlayer():

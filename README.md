@@ -28,8 +28,8 @@ git clone https://github.com/PKUDigitalHealth/ECGFounder.git
 Install required packages:
 
 ```bash
-conda create -n ECGFounder python=3.10
-conda activate ECGFounder
+conda create -n RAMZAgent python=3.10
+conda activate RAMZAgent
 pip install -r requirements.txt
 ```
 

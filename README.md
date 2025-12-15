@@ -33,3 +33,6 @@ conda activate RAMZAgent
 pip install -r requirements.txt
 ```
 
+# 🖥️ Usage Instructions
+This repository contains three 
+

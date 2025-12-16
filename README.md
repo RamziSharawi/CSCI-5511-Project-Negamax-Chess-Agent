@@ -1,4 +1,9 @@
-<img src="./RepoLogo.png" width="700">
+<p align="center">
+  <img src="./RepoLogo.png"
+       width="700"
+       style="max-height:150px; object-fit:cover;">
+</p>
+
 
 # 🌟 Motivation
 The use of artificial intelligence (AI) in chess has been a subject of intense research since the 1950s, when Alan Turing was the first to develop a theoretical chess-playing program in 1951. Ever since then, progress in AI-based chess agents has advanced significantly, with modern data-driven chess engines including AlphaZero and its open-source alternative, Leela Chess Zero. Such modern chess engines typically integrate deep reinforcement learning techniques to enhance decision-making within Monte-Carlo Tree Search (MCTS). By leveraging an abundance of chess data and top-tier computational resources, modern chess engines have achieved superhuman chess abilities, transforming how the game is studied and analyzed today.

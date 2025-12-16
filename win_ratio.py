@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 # ================= CONFIGURATION =================
-# PATH TO YOUR STOCKFISH EXECUTABLE (REQUIRED!)
 DEFAULT_STOCKFISH = r"stockfish\stockfish-windows-x86-64-avx2.exe"
 DEFAULT_BOOK = r"opening_books\gm2600.bin"
 PLOT_FOLDER = "report_plots"
@@ -18,16 +17,16 @@ PLOT_FOLDER = "report_plots"
 DEFAULT_NUM_GAMES = 100          # Total games to play
 DEFAULT_STOCKFISH_ELO = 1500     # Stockfish strength
 
-DEFAULT_DEPTH_LIMIT = 4         # Both stop after depth 6print(f"Game {game_id+1}: {winner_name.title()} wins in {moves} moves ({phase})")
-DEFAULT_TIME_LIMIT  = 5.0     # Both have 10 seconds per move max
+DEFAULT_DEPTH_LIMIT = 4          # Both stop after depth 4
+DEFAULT_TIME_LIMIT  = 5.0        # Both have 10 seconds per move max
 
-PLOT_FOLDER = "report_plots"
+PLOT_FOLDER = "report_plots"     # Folder in which plots will be saved
 # =================================================
 
-# - Function to predict the game phase at which the game finished.
+# Function to predict the game phase at which the game finished.
 def get_game_phase(board):
     """
-    Determines the phase based on Non-Pawn Material (NPM).
+    Determines game phase based on Non-Pawn Material (NPM).
     Weights: Queen=9, Rook=5, Knight=3, Bishop=3
     """
     # 1. Check for "Opening" based on low move count (blunder/trap)
@@ -50,9 +49,8 @@ def get_game_phase(board):
         # Count black pieces of this type
         total_material += len(board.pieces(piece_type, chess.BLACK)) * value
 
-    # 3. Define Phase based on Material Threshold
-    # Max material is 62. 
-    # A standard endgame threshold is often considered around 26 (e.g., Q+R vs Q+R is 28)
+    # 3. Defining phase based on material threshold
+    # Choosing <= 26 as an endgame threshold (max material is 62)
     if total_material <= 26:
         return "Endgame"
     else:
@@ -60,7 +58,7 @@ def get_game_phase(board):
 
 def create_player(agent_type, color, args):
     """
-    Factory function to instantiate the correct player based on string name.
+    Instantiates the correct player based on string name.
     """
     agent_type = agent_type.lower()
     
@@ -94,7 +92,6 @@ def play_game(game_id, p1_type, p2_type, p1_plays_white, args):
     p2_color = chess.BLACK if p1_plays_white else chess.WHITE
 
     # Instantiate Players
-    # We instantiate fresh every game to ensure clean state (empty TT, clean process)
     player1 = create_player(p1_type, p1_color, args)
     player2 = create_player(p2_type, p2_color, args)
 

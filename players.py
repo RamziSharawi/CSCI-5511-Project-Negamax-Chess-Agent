@@ -5,7 +5,9 @@ import chess.syzygy
 import time
 import chess.engine
 
-# Based on PeSTO evaluation function. First element of tuple is midgame value, second is endgame value.
+# --- 1. Scoring based on PeSTO evaluation function. ---
+
+# Material values according to PeSTO evaluation function. 1st element is middlegame value, 2nd is endgame value
 MATERIAL_PESTO = {
     chess.PAWN:   (82, 94),
     chess.KNIGHT: (337, 281),
@@ -15,6 +17,7 @@ MATERIAL_PESTO = {
     chess.KING:   (0, 0)
 }
 
+# Middlegame Piece-Square Tables according to PeSTO evaluation function. Captures positional benefit of pieces in middlegame.
 PAWN_MG = [
       0,   0,   0,   0,   0,   0,   0,   0,
      98, 134,  61,  95,  68, 126,  34, -11,
@@ -81,7 +84,7 @@ KING_MG = [
     -15,  36,  12, -54,   8, -28,  24,  14
 ]
 
-# --- ENDGAME TABLES (EG) ---
+# Endgame Piece-Square Tables according to PeSTO evaluation function. Captures positional benefit of pieces in endgame.
 PAWN_EG = [
       0,   0,   0,   0,   0,   0,   0,   0,
     178, 173, 158, 134, 147, 132, 165, 187,
@@ -148,6 +151,7 @@ KING_EG = [
     -53, -34, -21, -11, -28, -14, -24, -43
 ]
 
+# Pairing pieces with their positional value depending on game phase in dictionary format
 PST_DICT_MG = {
     chess.PAWN: PAWN_MG, chess.KNIGHT: KNIGHT_MG, chess.BISHOP: BISHOP_MG,
     chess.ROOK: ROOK_MG, chess.QUEEN: QUEEN_MG,   chess.KING: KING_MG
@@ -157,7 +161,12 @@ PST_DICT_EG = {
     chess.ROOK: ROOK_EG, chess.QUEEN: QUEEN_EG,   chess.KING: KING_EG
 }
 
+# --- 2. Player Definitions
+
 class RandomPlayer():
+    """
+    RandomPlayer() agent chooses at random from list of valid moves given the board position
+    """
     def __init__(self, mycolor):
         self.color = mycolor
     
@@ -172,14 +181,42 @@ class RandomPlayer():
         return curr_move
 
 class RAMZPlayer():
+    """
+    RAMZPlayer implements the RAM-Z chess engine, a classical alpha-beta-based agent
+    that combines modern search heuristics with a handcrafted PeSTO-style evaluation.
 
+    The agent includes the following core components:
+
+    • Iterative Deepening Negamax search with alpha-beta pruning
+    • Transposition Table using Zobrist hashing with exact / lower / upper bounds
+    • Advanced move ordering:
+        - Transposition-table best move first
+        - MVV-LVA (Most Valuable Victim; Least Valuable Attacker) for captures
+        - Killer move heuristic (depth-based beta-cutoff moves)
+        - History heuristic (global quiet-move cutoff statistics)
+    • Quiescence search to mitigate the horizon effect:
+        - Capture- and promotion-only search
+        - Stand-pat evaluation
+        - Delta pruning for hopeless tactical lines
+    • Null-Move Pruning with safeguards against zugzwang
+    • Opening book support via Polyglot format
+    • Syzygy endgame tablebase support (when available)
+
+    Position evaluation is performed using a tapered PeSTO evaluation function:
+    • Separate middlegame and endgame material values
+    • Piece-square tables for all pieces
+    • Smooth phase interpolation based on remaining material
+    • Passed-pawn detection using bitboard masks with rank-scaled bonuses
+    """
     def __init__(self, mycolor, depth_limit, time_limit, opening_book_path, syzygy_path):
+        # Setting agent color, depth limit, time limit, and opening book.
         self.mycolor = mycolor
         self.depth_limit = depth_limit
         self.time_limit = time_limit
         self.opening_book_path = opening_book_path
         self.syzygy_path = syzygy_path
 
+        # Caching moves for lookup throughout the game
         self.transposition_table = {}
         self.history_table = [[[0 for _ in range(64)] for _ in range(64)] for _ in range(2)]
         self.MAX_PLY = 16 # Max search depth (ply)
@@ -198,7 +235,7 @@ class RAMZPlayer():
         Accepts either an int bitboard or a python-chess SquareSet.
         Converts to int and yields square indices (0-63) for 1 bits.
         """
-        # Ensure we have an int (SquareSet supports int(SquareSet))
+        # Represents board as bitboard for faster operation
         bb = int(bitboard)
         while bb:
             lsb = bb & -bb
@@ -207,6 +244,7 @@ class RAMZPlayer():
             bb ^= lsb
 
     
+    # Initializing piece square tables. 
     def init_pst_tables(self):
         self.PST_MG_WHITE = {pt: [0]*64 for pt in range(1, 7)}
         self.PST_EG_WHITE = {pt: [0]*64 for pt in range(1, 7)}
@@ -218,11 +256,11 @@ class RAMZPlayer():
             eg_list = PST_DICT_EG[pt]
 
             for sq in range(64):
-                # White uses it normally
+                # PeSTO tables are from White's perspective
                 self.PST_MG_WHITE[pt][sq] = mg_list[sq]
                 self.PST_EG_WHITE[pt][sq] = eg_list[sq]
 
-                # BLACK: Uses the "Mirrored" square, since PeSTO tables are from White's perspective
+                # For BLACK, use the mirrored square (since PeSTO tables are from White's perspective)
                 mirror_sq = chess.square_mirror(sq)
                 self.PST_MG_BLACK[pt][sq] = mg_list[mirror_sq]
                 self.PST_EG_BLACK[pt][sq] = eg_list[mirror_sq]
@@ -248,24 +286,31 @@ class RAMZPlayer():
             self.PASSED_PAWN_MASK[chess.BLACK][sq] = b_mask
 
     def get_color(self):
+        """
+        Returns color agent is playing
+        """
         return self.mycolor
 
     def make_move(self, board, time_limit=10.0):
-        # 1. Opening Book
+        """
+        Decides what move the agent should play
+        """
+        # 1. Try looking through the opening book. If a move exists in the book, look it up and play it
         if self.opening_book_path:
             try:
                 with chess.polyglot.open_reader(self.opening_book_path) as reader:
-                    # Optional: Check if we actually have moves
                     if sum(1 for _ in reader.find_all(board)) > 0:
                         return reader.weighted_choice(board).move
             except Exception as e:
                 print(f"OPENING BOOK ERROR: {e}")
                 pass
 
-        # 2. Reset Tables
+        # 2. Resetting transposition tables if they get too large (to save on memory)
         if len(self.transposition_table) > 1000000:
             self.transposition_table.clear()
             print("TT cleared due to size limit.")
+        
+
         self.killer_moves = [[None, None] for _ in range(self.MAX_PLY)]
         # Reset history heuristic (divide by 2 to decay old values)
         for c in range(2):
@@ -276,29 +321,22 @@ class RAMZPlayer():
         best_move_so_far = None
         start_time = time.time()
         
-        # 3. Iterative Deepening
-        # We try Depth 1, then Depth 2, then Depth 3...
-        # We stop ONLY when we run out of time.
-        for current_depth in range(1, self.depth_limit): # 100 is effectively infinite
+        # 3. Performing iterative Deepening. Stops at either depth limit or at time limit
+        for current_depth in range(1, self.depth_limit):
             
-            # CHECK TIME: If we used more than 50% of our time, stop.
-            # (Because the next depth will likely take longer than the remaining 50%)
-            if (time.time() - start_time) > (self.time_limit/3.5):
+            # CHECK TIME: If agent used more than 50% of its time, stop. (Because the next depth will likely take longer than the remaining 50%)
+            if (time.time() - start_time) > (self.time_limit/2):
                 break
 
             try:
-                # Search
+                # Search using Negamax
                 score, move = self.negamax(board, float("-inf"), float("inf"), current_depth, 0)
                 
                 # Update best move
                 best_move_so_far = move
                 
-                # Print info (optional)
-                elapsed = time.time() - start_time
-                #print(f"Depth {current_depth} | Score: {score} | Time: {elapsed:.2f}s")
-
+                # If checkmate found, stop search early and just play out that sequence (to save on time)
                 if score > 90000000:
-                    #print("Checkmate found! Stopping search early.")
                     break
 
             except Exception as e:
@@ -308,25 +346,48 @@ class RAMZPlayer():
         return best_move_so_far
 
     def order_moves(self, board, tt_best_move, killers):
+        """
+        Implements move-ordering heuristic to make pruning efficient. Does it in the following order:
+        1. Transposition table moves first
+        2. MVV-LVA (Most Valuable Victim, Least Valuable Attacker)
+        3. Killer moves (a non-capture move that previously caused a beta-cutoff at the same search depth)
+        4. History heuristic moves (those that have frequently caused beta-cutoffs in the past)
+        5. Everything else
+        """
+
+        # Piece values for MVV-LVA heuristic
         VICTIM_VALUES = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
+        ATTACKER_VALUES = VICTIM_VALUES
+
+        # Currently, inputting two killer moves at a time
         killer1, killer2 = killers
         
-        # Fast lists
+        # Initializing lists
         captures = []
         quiet_killers = []
         quiet_history = []
         quiet_others = []
 
         for move in board.legal_moves:
+            # If move is the transposition table best move, yield it
             if move == tt_best_move:
                 yield move
                 continue
-
+            
             if board.is_capture(move):
-                # Fast MVV-LVA
+                # === MVV-LVA Heuristic ===
+                # Victim
                 victim = board.piece_at(move.to_square)
-                val = VICTIM_VALUES.get(victim.piece_type, 0) if victim else 1 # En passant = 1
-                captures.append((val, move))
+                victim_val = VICTIM_VALUES.get(victim.piece_type, 0) if victim else 1 # En passant = 1
+
+                # Attacker
+                attacker = board.piece_at(move.from_square)
+                attacker_val = ATTACKER_VALUES.get(attacker.piece_type, 0)
+
+                # MVV-LVA score
+                score = (victim_val*10) - attacker_val
+
+                captures.append((score, move))
             
             elif move == killer1:
                 quiet_killers.append((2, move))
@@ -337,8 +398,8 @@ class RAMZPlayer():
                 h_score = self.history_table[int(board.turn)][move.from_square][move.to_square]
                 quiet_history.append((h_score, move))
 
-        # Sort and Yield
-        # 1. Captures (High val first)
+        # Sorting and yielding
+        # 1. Captures (Highest MVV-LVA scores first)
         captures.sort(key=lambda x: x[0], reverse=True)
         for _, m in captures: yield m
         
@@ -352,8 +413,12 @@ class RAMZPlayer():
 
     
     def negamax(self, board, alpha, beta, depth_remaining, ply):
-
+        """
+        Impelements Negamax search algorithm
+        """
         original_alpha = alpha
+
+        # Hashing board for quick lookup of position in transposition table
         zobrist_key = chess.polyglot.zobrist_hash(board)
         if zobrist_key in self.transposition_table:
             entry = self.transposition_table[zobrist_key]
@@ -380,17 +445,18 @@ class RAMZPlayer():
                     base_score -= ply 
                 return base_score, None
 
+        # At depth limit, run quiescence search to circumvent horizon effect
         if depth_remaining <= 0:
             return self.quiescence(board, alpha, beta), None
 
-        # # ### NULL MOVE PRUNING ###
+        # Null-Move Pruning: Make a null move and prune if position is still good
         if depth_remaining >= 3 and not board.is_check() and ply > 0:
             # Making the null move (i.e. skipping my turn)
             occupied = board.occupied_co[board.turn]
             kings = int(board.pieces(chess.KING, board.turn))
             pawns = int(board.pieces(chess.PAWN, board.turn))
             
-            # 'occupied & ~kings & ~pawns' removes kings and pawns from the count
+            # Removes kings and pawns from the count to avoid Zugzwangs, which null-move pruning is prone to
             has_major_pieces = (occupied & ~kings & ~pawns) != 0
             if has_major_pieces:
                 board.push(chess.Move.null())
@@ -406,17 +472,12 @@ class RAMZPlayer():
         tt_best_move = None
 
         if zobrist_key in self.transposition_table:
-            # .get() is safer, in case 'best_move' isn't stored
             tt_best_move = self.transposition_table[zobrist_key].get('best_move')
 
         current_killers = self.killer_moves[ply]
 
         ordered_moves = self.order_moves(board, tt_best_move, current_killers)
     
-        # if tt_best_move in ordered_moves:
-        #     ordered_moves.remove(tt_best_move)
-        #     ordered_moves.insert(0, tt_best_move)
-
         for move in ordered_moves:
             board.push(move)
 
@@ -433,14 +494,15 @@ class RAMZPlayer():
             if v >= beta:
                 if not board.is_capture(move) and not move.promotion:
                     if move != self.killer_moves[ply][0]:
-                        self.killer_moves[ply][1] = self.killer_moves[ply][0] # Shift old
-                        self.killer_moves[ply][0] = move                     # Add new
-                    # Get the color of the player *who just moved*
+                        self.killer_moves[ply][1] = self.killer_moves[ply][0] # Shift old move
+                        self.killer_moves[ply][0] = move                     # Add new move
+
+                    # Getting the color of the player who just moved
                     color_index = 0 if board.turn == chess.WHITE else 1
                     reward = depth_remaining * depth_remaining
                     self.history_table[color_index][move.from_square][move.to_square] += reward
                 
-                break # This is your existing beta-cutof
+                break
 
         if v <= original_alpha:
             flag = self.ENTRY_TYPE_UPPER # Failed low
@@ -459,24 +521,29 @@ class RAMZPlayer():
         return v, best_move
 
     def quiescence(self, board, alpha, beta):
-        # 1. Stand-pat (Don't capture if you are already winning)
+        """
+        Implements quiescence search
+        """
+        # 1. Baseline score: if I don't capture anything, how well am I doing?
         stand_pat = self.utility(board)
         if board.turn != self.mycolor:
             stand_pat = -stand_pat
-
+        
+        # If even doing nothing is too good for opponent to allow, it's a safe quiescence cutoff
         if stand_pat >= beta:
             return stand_pat
 
-        # === DELTA PRUNING ===
+        # 2. Delta Pruning: even if I win with the biggest possible material, can the agent still reach alpha?
         BIG_DELTA = 1050 # 900 (Queen) + 150 (Safety buffer)
         pawns = board.pieces(chess.PAWN, board.turn)
+
+        # 3. Taking note of paws with possibility of promoting; delta pruning is unsafe if promotions are possible
         if board.turn == chess.WHITE:
             promoters = pawns & chess.BB_RANK_7
         else:
             promoters = pawns & chess.BB_RANK_2
         
-        # If we are NOT promoting, we can try to prune
-        # If promoters is not 0, we have a dangerous pawn and must search
+        # If no promoting, then look to prune
         if not promoters: 
             if stand_pat < alpha - BIG_DELTA:
                 return alpha
@@ -484,13 +551,13 @@ class RAMZPlayer():
         if alpha < stand_pat:
             alpha = stand_pat
 
-        # 2. Search only Captures and Promotions
+        # 4. For quiescence search, agent looks at forcing moves only
         captures = [
             m for m in board.legal_moves 
             if board.is_capture(m) or m.promotion
         ]
         
-        # Simple MVV-LVA sorting for Q-Search
+        # 5. Capture ordering using simple MVV sorting
         VICTIM_VALUES = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
         def cap_score(move):
             victim = board.piece_at(move.to_square)
@@ -499,6 +566,7 @@ class RAMZPlayer():
             
         captures.sort(key=cap_score, reverse=True)
 
+        # 6. Recursive quiescence search: tree ends when no captures exist
         for move in captures:
             board.push(move)
             score = -self.quiescence(board, -beta, -alpha)
@@ -512,14 +580,17 @@ class RAMZPlayer():
         return alpha
 
     def utility(self, board):
-    # Terminal nodes
+        """
+        Calculates utility function score for given position
+        """
+        # 1. Terminal node checks first (checkmate and stalemate)
         if board.is_checkmate():
             return -99999999 if board.turn == self.mycolor else 99999999
 
         if board.is_stalemate() or board.is_insufficient_material() or board.can_claim_draw():
             return 0
 
-        # --- 1. GAME PHASE CALCULATION ---
+        # 2. Game phase calculation using PeSTO tapering
         phase = 0
         phase += len(board.pieces(chess.KNIGHT, chess.WHITE)) * 1
         phase += len(board.pieces(chess.KNIGHT, chess.BLACK)) * 1
@@ -531,40 +602,41 @@ class RAMZPlayer():
         phase += len(board.pieces(chess.QUEEN, chess.BLACK)) * 4
         phase = min(phase, 24) 
 
+        # Calculating middlegame and endgame scores to be blended later
         mg_score = 0
         eg_score = 0
 
-        # ### NEW: Pre-fetch pawn bitboards as integers for fast bitwise math
+        # Pre-fetching pawn bitboards as integers for fast bitwise math
         white_pawns_int = int(board.pieces(chess.PAWN, chess.WHITE))
         black_pawns_int = int(board.pieces(chess.PAWN, chess.BLACK))
 
-        # ### NEW: Define bonuses
+        # Defining bonuses to encourage passed pawns
         PASSED_MG = 20  # Small bonus in middlegame
         PASSED_EG = 50  # Big bonus in endgame (passed pawns are dangerous!)
         
-        # --- 2. SUMMATION ---
+        # 3. Iterating over pieces and summing up values
         for pt in range(1, 7):
-            # We get material values from our new tuple dictionary
+
+            # Getting material values from PeSTO tuple dictionary
             mg_val, eg_val = MATERIAL_PESTO[pt]
 
-            # WHITE
+            # Looping through White's pieces
             bb_w = board.pieces(pt, chess.WHITE)
             for sq in self.iter_bits(bb_w):
                 mg_score += mg_val + self.PST_MG_WHITE[pt][sq]
                 eg_score += eg_val + self.PST_EG_WHITE[pt][sq]
 
-                # ### NEW: Passed Pawn Check for White
+                # Passed Pawn Check for White
                 if pt == chess.PAWN:
                     if (self.PASSED_PAWN_MASK[chess.WHITE][sq] & black_pawns_int) == 0:
                         rank = chess.square_rank(sq)
-                        # Scale bonus by rank (closer to 8 = better)
-                        # Rank 0-7. We want high bonus for 4, 5, 6.
+                        # Scaling bonus by rank (closer to 8 = better)
                         w_bonus = PASSED_EG + (rank * 10) 
                         
                         mg_score += PASSED_MG
                         eg_score += w_bonus
 
-            # BLACK
+            # Looping through Black's pieces
             bb_b = board.pieces(pt, chess.BLACK)
             for sq in self.iter_bits(bb_b):
                 mg_score -= mg_val + self.PST_MG_BLACK[pt][sq]
@@ -572,19 +644,14 @@ class RAMZPlayer():
 
                 if pt == chess.PAWN:
                     if (self.PASSED_PAWN_MASK[chess.BLACK][sq] & white_pawns_int) == 0:
-                        # Invert rank for Black (Rank 6 is index 1, Rank 1 is index 6)
-                        # python-chess ranks are 0-7 relative to White
+                        # Scaling bonus by rank (closer to 1 = better for Black)
                         rank = 7 - chess.square_rank(sq)
                         b_bonus = PASSED_EG + (rank * 10)
                         
                         mg_score -= PASSED_MG
                         eg_score -= b_bonus
 
-                
-        
-        # --- 3. TAPERED FORMULA (From your C code dump) ---
-        # "mgPhase" is just 'phase'
-        # "egPhase" is 24 - phase
+        # 4. Tapered PeSTO evaluation formula
         final_score = ( (mg_score * phase) + (eg_score * (24 - phase)) ) // 24
 
         if self.mycolor == chess.WHITE:
@@ -593,6 +660,9 @@ class RAMZPlayer():
             return -final_score
     
 class StockfishPlayer:
+    """
+    Implements standard Stockfish engine for use in tests
+    """
     def __init__(self, color, path, depth_limit=4, time_limit=5.0, elo=1500):
         self.color = color
         self.time_limit = time_limit

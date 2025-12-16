@@ -144,7 +144,7 @@ pygame.display.set_caption("CSCI-5511 Chess Project")
 
 # Initializing chess board from python-chess
 board = chess.Board()
-PIECES = {} # Empty pieces dictionary
+PIECES = {}
 for piece in ["wp", "wr", "wn", "wb", "wk", "wq", "bp", "br", "bn", "bb", "bk", "bq"]:
     image = pygame.image.load(f"pieces/{piece}.png")
     PIECES[piece] = pygame.transform.smoothscale(image, (SQ_SIZE, SQ_SIZE))
@@ -170,7 +170,7 @@ while running:
         draw_board()
         draw_pieces(board)
         
-        # Optional: small delay so the AI doesn't move instantly (easier to follow)
+        # Small delay so the AI doesn't move instantly (easier to follow)
         pygame.time.wait(500)
 
         ai_move = Player.make_move(board)
@@ -194,16 +194,21 @@ while running:
                 # highlight legal moves
                 legal_moves = [m.to_square for m in board.legal_moves if m.from_square == square]
                 dragging_piece_pos = event.pos
+
         elif event.type == pygame.MOUSEMOTION and selected_square:
             dragging_piece_pos = event.pos
+
         elif event.type == pygame.MOUSEBUTTONUP and selected_square:
             release_square = square_from_mouse(event.pos)
             move = chess.Move(selected_square, release_square)
+
             if move in board.legal_moves:
                 board.push(move)
+
             elif chess.Move(selected_square, release_square, promotion=chess.QUEEN) in board.legal_moves:
                      board.push(chess.Move(selected_square, release_square, promotion=chess.QUEEN))
-            # reset drag
+
+            # To reset drag
             selected_square = None
             dragging_piece = None
             legal_moves = []

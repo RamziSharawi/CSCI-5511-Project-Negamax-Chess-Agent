@@ -1,4 +1,10 @@
-![Negamax Chess Agent Logo](./RepoLogo.png)
+<p align="center">
+  <img src="./RepoLogo.png"
+       width="700"
+       style="max-height:150px; object-fit:cover;">
+</p>
+
+
 # 🌟 Motivation
 The use of artificial intelligence (AI) in chess has been a subject of intense research since the 1950s, when Alan Turing was the first to develop a theoretical chess-playing program in 1951. Ever since then, progress in AI-based chess agents has advanced significantly, with modern data-driven chess engines including AlphaZero and its open-source alternative, Leela Chess Zero. Such modern chess engines typically integrate deep reinforcement learning techniques to enhance decision-making within Monte-Carlo Tree Search (MCTS). By leveraging an abundance of chess data and top-tier computational resources, modern chess engines have achieved superhuman chess abilities, transforming how the game is studied and analyzed today.
 
@@ -25,7 +31,10 @@ git clone https://github.com/RamziSharawi/CSCI-5511-Project-Negamax-Chess-Agent.
 ```
 
 ## Environment Set Up
-You can set up the environment using either Conda or Python's built-in `venv` module. Choose the option that works best for you.
+You can set up the environment using either Conda or Python's built-in `venv` module. Choose the option that works best for you. If you didn't already, after cloning the GitHub repository, make sure to set the folder as your current working location:
+```bash
+cd CSCI-5511-Project-Negamax-Chess-Agent
+```
 
 ### Option 1: Using Conda
 ```bash
@@ -83,8 +92,8 @@ To play agents against each other and obtain their win-ratios and plots on perfo
 python win_ratio.py --agent1 ramz --agent2 stockfish --games 100 --depth 4 --time 5.0 --elo 1500
 ```
 Command-line arguments:
- * **--agent1**: Sets the first agent (`random`, `ramz`, `stockfish`). Default is `ramz`.
- * **--agent2**: Sets the second agent (`random`, `ramz`, `stockfish`). Default is `stockfish`.
+ * **--agent1**: Sets the agent to play as White (`random`, `ramz`, `stockfish`). Default is `ramz`.
+ * **--agent2**: Sets the agent to play as Black (`random`, `ramz`, `stockfish`). Default is `stockfish`.
  * **--games**: Number of games to play. Default is `100`.
  * **--depth**: Sets the maximum search depth for the agent (in plies). Default is `4`.
  * **--time**: Sets the time limit per move for the agent (in seconds). Default is `5.0`.

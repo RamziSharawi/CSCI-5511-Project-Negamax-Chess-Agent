@@ -25,7 +25,10 @@ git clone https://github.com/RamziSharawi/CSCI-5511-Project-Negamax-Chess-Agent.
 ```
 
 ## Environment Set Up
-You can set up the environment using either Conda or Python's built-in `venv` module. Choose the option that works best for you.
+You can set up the environment using either Conda or Python's built-in `venv` module. Choose the option that works best for you. If you didn't already, after cloning the GitHub repository, make sure to set the folder as your current working location:
+```bash
+cd CSCI-5511-Project-Negamax-Chess-Agent
+```
 
 ### Option 1: Using Conda
 ```bash
